@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bitácora de Procedimientos</title>
+<meta name="description" content="Registro personal de procedimientos médicos: fecha, hora, tipo y complicaciones. Sin datos de pacientes.">
+<meta name="theme-color" content="#0B6B57">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Bitácora">
+<style>
+  :root{
+    --bg:#F5F7F5;
+    --surface:#FFFFFF;
+    --surface-2:#EBF0EC;
+    --border:#D7DFDA;
+    --text:#182620;
+    --text-muted:#5B6B61;
+    --accent:#0B6B57;
+    --accent-strong:#075545;
+    --accent-soft:#DEEFE8;
+    --danger:#B3261E;
+    --danger-strong:#8E1D17;
+    --danger-soft:#FBEAE8;
+    --gold:#9A7B2E;
+    --gold-soft:#F6EFDC;
+    --shadow: 0 1px 2px rgba(15,30,24,0.06), 0 4px 12px rgba(15,30,24,0.05);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0E1512; --surface:#161F1A; --surface-2:#1D2721; --border:#2B3830;
+      --text:#E7ECE8; --text-muted:#94A69B; --accent:#4FBFA1; --accent-strong:#6FD4B7;
+      --accent-soft:#17332B; --danger:#E8776D; --danger-strong:#F2988F; --danger-soft:#3A211E;
+      --gold:#D8BE7A; --gold-soft:#2E2817;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 6px 16px rgba(0,0,0,0.35);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0E1512; --surface:#161F1A; --surface-2:#1D2721; --border:#2B3830;
+    --text:#E7ECE8; --text-muted:#94A69B; --accent:#4FBFA1; --accent-strong:#6FD4B7;
+    --accent-soft:#17332B; --danger:#E8776D; --danger-strong:#F2988F; --danger-soft:#3A211E;
+    --gold:#D8BE7A; --gold-soft:#2E2817;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 6px 16px rgba(0,0,0,0.35);
+    color-scheme: dark;
+  }
+
+  *{ box-sizing:border-box; }
+  html, body{ height:100%; }
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:"Libre Franklin", -apple-system, "Segoe UI", sans-serif;
+    padding-top:env(safe-area-inset-top, 0px);
+    padding-bottom:env(safe-area-inset-bottom, 0px);
+  }
+  img{ max-width:100%; }
+  .mono{ font-family:"IBM Plex Mono", ui-monospace, SFMono-Regular, monospace; font-variant-numeric: tabular-nums; }
+
+  .app{ max-width:640px; margin-inline:auto; padding-inline:16px; padding-block:12px 40px; }
+
+  .topbar{
+    position:sticky; top:env(safe-area-inset-top, 0px); z-index:20; background:var(--bg);
+    padding-block:10px 6px; margin-inline:-16px; padding-inline:16px; border-bottom:1px solid transparent;
+  }
+  .topbar.is-stuck{ border-bottom-color:var(--border); }
+  .brand{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .brand-left{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .brand-mark{ flex:none; color:var(--accent); }
+  .brand-text{ display:flex; flex-direction:column; min-width:0; }
+  .brand-name{ font-weight:700; font-size:1.15rem; letter-spacing:-0.01em; }
+  .brand-sub{ font-size:0.78rem; color:var(--text-muted); }
+  .premium-pill{
+    flex:none; font-size:0.72rem; font-weight:700; letter-spacing:0.02em; color:var(--gold);
+    background:var(--gold-soft); border:1px solid var(--gold); border-radius:999px; padding:5px 10px;
+    cursor:pointer; font-family:inherit;
+  }
+
+  .install-banner{
+    margin-top:10px; padding:10px 12px; border-radius:10px; background:var(--accent-soft);
+    border:1px solid var(--accent); font-size:0.82rem; color:var(--text);
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+  }
+  .install-banner button{
+    font-family:inherit; font-size:0.78rem; font-weight:700; color:#fff; background:var(--accent);
+    border:none; border-radius:8px; padding:6px 10px; cursor:pointer; flex:none;
+  }
+  .install-banner .dismiss{ background:transparent; color:var(--text-muted); font-size:1.1rem; padding:0 4px; }
+
+  .toast{
+    position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom, 0px) + 18px); transform:translate(-50%, 12px);
+    background:var(--text); color:var(--bg); padding:9px 16px; border-radius:999px; font-size:0.85rem;
+    opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease;
+    box-shadow:var(--shadow); z-index:50; max-width:calc(100% - 32px); text-align:center;
+  }
+  .toast.show{ opacity:1; transform:translate(-50%, 0); }
+
+  .stats{ display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-top:14px; }
+  .stat-tile{
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:10px 8px; display:flex; flex-direction:column; align-items:center; gap:2px; box-shadow:var(--shadow);
+  }
+  .stat-value{ font-family:"IBM Plex Mono", monospace; font-weight:500; font-size:1.2rem; font-variant-numeric:tabular-nums; }
+  .stat-label{ font-size:0.68rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.04em; }
+
+  .toolbar{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:16px; }
+  .btn{
+    font-family:inherit; font-size:0.88rem; font-weight:600; border-radius:10px; padding:9px 14px;
+    border:1px solid transparent; cursor:pointer; display:inline-flex; align-items:center; gap:6px; line-height:1.2;
+  }
+  .btn:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  .btn-primary{ background:var(--accent); color:#fff; }
+  .btn-primary:hover{ background:var(--accent-strong); }
+  .btn-ghost{ background:transparent; color:var(--text); border-color:var(--border); }
+  .btn-ghost:hover{ background:var(--surface-2); }
+  .filters{ display:flex; gap:6px; }
+  .chip{
+    font-family:inherit; font-size:0.8rem; font-weight:500; color:var(--text-muted);
+    background:var(--surface); border:1px solid var(--border); border-radius:999px; padding:6px 12px; cursor:pointer;
+  }
+  .chip.is-active{ background:var(--accent-soft); border-color:var(--accent); color:var(--accent-strong); }
+  .select{
+    font-family:inherit; font-size:0.82rem; color:var(--text); background:var(--surface);
+    border:1px solid var(--border); border-radius:10px; padding:8px 10px; max-width:100%;
+  }
+
+  .form-panel{ margin-top:14px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; box-shadow:var(--shadow); }
+  .form-title{ font-weight:600; font-size:1rem; margin:0 0 12px; }
+  #procForm{ display:flex; flex-direction:column; gap:12px; }
+  .field-row{ display:flex; gap:10px; }
+  .field-row > label{ flex:1; min-width:0; }
+  label{ display:flex; flex-direction:column; gap:5px; font-size:0.78rem; color:var(--text-muted); font-weight:500; }
+  input, select, textarea{
+    font-family:inherit; font-size:0.92rem; color:var(--text); background:var(--surface-2);
+    border:1px solid var(--border); border-radius:9px; padding:9px 10px; width:100%;
+  }
+  input:focus-visible, select:focus-visible, textarea:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
+  textarea{ resize:vertical; font-family:inherit; }
+  .toggle-row{ flex-direction:row; align-items:center; gap:9px; font-size:0.9rem; color:var(--text); font-weight:600; }
+  .toggle-row input{ width:auto; accent-color:var(--danger); transform:scale(1.15); }
+  .helper-note{ font-size:0.72rem; color:var(--text-muted); margin:-4px 0 0; }
+  .form-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:4px; }
+
+  .log{ margin-top:18px; display:flex; flex-direction:column; gap:8px; }
+  .date-heading{
+    font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;
+    color:var(--text-muted); margin:14px 0 2px; padding-top:6px;
+  }
+  .date-heading:first-child{ margin-top:0; }
+  .entry{
+    display:flex; gap:12px; align-items:flex-start; background:var(--surface);
+    border:1px solid var(--border); border-radius:12px; padding:11px 12px; box-shadow:var(--shadow);
+  }
+  .entry-time{ font-family:"IBM Plex Mono", monospace; font-size:0.85rem; color:var(--text-muted); flex:none; padding-top:2px; min-width:2.6em; }
+  .entry-body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:4px; }
+  .entry-title{ font-size:0.92rem; font-weight:600; overflow-wrap:anywhere; }
+  .badge{ align-self:flex-start; font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.03em; border-radius:6px; padding:2px 7px; }
+  .badge-danger{ background:var(--danger-soft); color:var(--danger-strong); }
+  .entry-note{ font-size:0.82rem; color:var(--text-muted); margin:0; overflow-wrap:anywhere; }
+  .entry-actions{ display:flex; flex-direction:column; gap:4px; flex:none; }
+  .icon-btn{
+    font-family:inherit; font-size:0.72rem; font-weight:600; color:var(--text-muted);
+    background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:5px 8px; cursor:pointer; white-space:nowrap;
+  }
+  .icon-btn.confirm{ background:var(--danger-soft); color:var(--danger-strong); border-color:var(--danger); }
+  .no-match{ color:var(--text-muted); font-size:0.88rem; text-align:center; padding:24px 0; }
+
+  .empty{
+    margin-top:24px; text-align:center; padding:32px 16px; border:1px dashed var(--border);
+    border-radius:14px; display:flex; flex-direction:column; align-items:center; gap:12px;
+  }
+  .empty p{ color:var(--text-muted); font-size:0.9rem; margin:0; max-width:32ch; }
+
+  .footer-actions{ margin-top:26px; padding-top:14px; border-top:1px solid var(--border); display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+  .footer-note{ font-size:0.72rem; color:var(--text-muted); }
+  .footer-links{ margin-top:10px; display:flex; gap:14px; flex-wrap:wrap; }
+  .footer-links a{ font-size:0.74rem; color:var(--text-muted); text-decoration:underline; }
+
+  .tag-case{
+    align-self:flex-start; font-family:"IBM Plex Mono", monospace; font-size:0.68rem;
+    color:var(--text-muted); background:var(--surface-2); border:1px solid var(--border); border-radius:6px; padding:2px 7px;
+  }
+
+  .summary-panel{ margin-top:14px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; box-shadow:var(--shadow); }
+  .summary-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+  .summary-head .select{ min-width:6.5em; }
+  .summary-block{ margin-top:16px; }
+  .summary-block:first-of-type{ margin-top:0; }
+  .summary-block h4{ font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin:0 0 8px; }
+  .summary-top{ display:flex; gap:10px; flex-wrap:wrap; }
+  .summary-top .stat-tile{ flex:1; min-width:110px; }
+  table.summary-table{ width:100%; border-collapse:collapse; font-size:0.84rem; }
+  table.summary-table th{ text-align:left; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.03em; color:var(--text-muted); padding:4px 6px; border-bottom:1px solid var(--border); }
+  table.summary-table td{ padding:6px; border-bottom:1px solid var(--border); vertical-align:top; }
+  table.summary-table td.num, table.summary-table th.num{ text-align:right; font-family:"IBM Plex Mono", monospace; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  table.summary-table tr:last-child td{ border-bottom:none; }
+  .summary-empty{ color:var(--text-muted); font-size:0.86rem; padding:8px 0; }
+
+  /* Premium modal */
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:flex-end;
+    justify-content:center; z-index:60; padding:16px;
+  }
+  @media (min-width:560px){ .modal-backdrop{ align-items:center; } }
+  .modal{
+    background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px;
+    max-width:420px; width:100%; box-shadow:var(--shadow);
+  }
+  .modal h3{ margin:0 0 6px; font-size:1.05rem; }
+  .modal p{ margin:0 0 14px; font-size:0.88rem; color:var(--text-muted); line-height:1.5; }
+  .modal ul{ margin:0 0 16px; padding-left:18px; font-size:0.86rem; color:var(--text); display:flex; flex-direction:column; gap:4px; }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:8px; }
+
+  @media (max-width:420px){ .field-row{ flex-direction:column; } }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+</head>
+<body>
+
+<div class="app">
+  <header class="topbar" id="topbar">
+    <div class="brand">
+      <div class="brand-left">
+        <svg class="brand-mark" width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+          <path d="M1 15h4l2-8 4 16 3-12 2 4h9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="brand-text">
+          <span class="brand-name">Bitácora de Procedimientos</span>
+          <span class="brand-sub">Registro personal — sin datos de pacientes</span>
+        </div>
+      </div>
+      <button class="premium-pill" id="btnPremium" type="button">Premium</button>
+    </div>
+    <div class="install-banner" id="installBanner" hidden>
+      <span>Instala la app en tu pantalla de inicio para un acceso directo.</span>
+      <div style="display:flex; align-items:center; gap:6px; flex:none;">
+        <button id="btnInstall" type="button">Instalar</button>
+        <button class="dismiss" id="btnDismissInstall" type="button" aria-label="Cerrar">×</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="stats">
+      <div class="stat-tile"><span class="stat-value mono" id="statTotal">—</span><span class="stat-label">Total</span></div>
+      <div class="stat-tile"><span class="stat-value mono" id="statMonth">—</span><span class="stat-label">Este mes</span></div>
+      <div class="stat-tile"><span class="stat-value mono" id="statComp">—</span><span class="stat-label">Complicaciones</span></div>
+    </section>
+
+    <section class="toolbar">
+      <button class="btn btn-primary" id="btnNew" type="button">+ Nuevo registro</button>
+      <div class="filters">
+        <button class="chip is-active" data-filter="all" type="button">Todos</button>
+        <button class="chip" data-filter="comp" type="button">Con complicación</button>
+      </div>
+      <select class="select" id="filterTipo" aria-label="Filtrar por procedimiento">
+        <option value="">Todos los procedimientos</option>
+      </select>
+      <button class="btn btn-ghost" id="btnSummary" type="button">Resumen anual</button>
+    </section>
+
+    <section class="summary-panel" id="summaryPanel" hidden>
+      <div class="summary-head">
+        <p class="form-title" style="margin:0;">Resumen anual</p>
+        <select class="select" id="summaryYear" aria-label="Año"></select>
+      </div>
+      <div id="summaryContent"></div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost" id="btnSummaryClose">Cerrar</button>
+        <button type="button" class="btn btn-primary" id="btnSummaryExport">Exportar resumen (CSV)</button>
+      </div>
+    </section>
+
+    <section class="form-panel" id="formPanel" hidden>
+      <p class="form-title" id="formTitle">Nuevo registro</p>
+      <form id="procForm">
+        <div class="field-row">
+          <label>Fecha<input type="date" id="fFecha" required></label>
+          <label>Hora<input type="time" id="fHora" required></label>
+        </div>
+        <label>Procedimiento
+          <select id="fTipo" required><option value="" disabled selected>Selecciona un procedimiento</option></select>
+        </label>
+        <label>Identificador interno (opcional)
+          <input type="text" id="fNumCaso" placeholder="Ej.: 2026-014" maxlength="40">
+        </label>
+        <p class="helper-note">Usa un correlativo o código propio — nunca el número de historia clínica del hospital ni ningún dato que identifique al paciente.</p>
+        <label class="toggle-row"><input type="checkbox" id="fComplicacion"><span>Hubo complicación</span></label>
+        <label id="notaWrap" hidden>Detalle de la complicación
+          <textarea id="fNota" rows="2" placeholder="Ej.: punción arterial accidental, resuelta con compresión"></textarea>
+        </label>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" id="btnCancel">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btnSave">Guardar registro</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="log" id="log"></section>
+
+    <div class="empty" id="emptyState" hidden>
+      <p>Todavía no hay procedimientos registrados. Empieza anotando el primero: fecha, hora, tipo y si hubo o no complicación.</p>
+      <button class="btn btn-primary" id="btnEmptyNew" type="button">Registrar el primero</button>
+    </div>
+
+    <div class="footer-actions">
+      <button class="btn btn-ghost" id="btnExport" type="button">Exportar CSV</button>
+      <span class="footer-note">Guardado solo en este dispositivo.</span>
+    </div>
+    <div class="footer-links">
+      <a href="privacidad.html">Privacidad</a>
+      <a href="terminos.html">Términos</a>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var PROCEDIMIENTOS = [
+    "Catéter venoso central yugular","Catéter venoso central subclavia","Arteriotomía / canalización arterial",
+    "Toracocentesis diagnóstica","Toracocentesis y drenaje de tórax","Pericardiocentesis","Intubación orotraqueal",
+    "Ventilación mecánica","Sonda nasogástrica","Reanimación cardiopulmonar avanzada","Trombolisis","Código ICTUS",
+    "Código Infarto","Sonda vesical","Punción lumbar","Cardioversión eléctrica / desfibrilación"
+  ];
+
+  var LOCAL_KEY = "bitacora_procedimientos_v1";
+  var records = [];
+  var filter = { mode: "all", tipo: "" };
+  var editingId = null;
+  var toastTimer = null;
+  var deferredInstallPrompt = null;
+
+  function pad(n){ return String(n).padStart(2, "0"); }
+  function todayStr(){ var d = new Date(); return d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate()); }
+  function nowStr(){ var d = new Date(); return pad(d.getHours()) + ":" + pad(d.getMinutes()); }
+  function escapeHtml(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c];
+    });
+  }
+  function formatFechaLarga(f){
+    var parts = f.split("-").map(Number);
+    var date = new Date(parts[0], parts[1]-1, parts[2]);
+    var s = new Intl.DateTimeFormat("es-ES", { weekday:"long", day:"numeric", month:"long", year:"numeric" }).format(date);
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  function showToast(msg){
+    var t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove("show"); }, 3200);
+  }
+
+  function populateSelects(){
+    var selForm = document.getElementById("fTipo");
+    var selFilter = document.getElementById("filterTipo");
+    PROCEDIMIENTOS.forEach(function(p){
+      var o1 = document.createElement("option"); o1.value = p; o1.textContent = p; selForm.appendChild(o1);
+      var o2 = document.createElement("option"); o2.value = p; o2.textContent = p; selFilter.appendChild(o2);
+    });
+  }
+
+  function openForm(rec){
+    editingId = rec ? rec.id : null;
+    document.getElementById("formTitle").textContent = rec ? "Editar registro" : "Nuevo registro";
+    document.getElementById("btnSave").textContent = rec ? "Guardar cambios" : "Guardar registro";
+    var fFecha = document.getElementById("fFecha"), fHora = document.getElementById("fHora"),
+        fTipo = document.getElementById("fTipo"), fNumCaso = document.getElementById("fNumCaso"),
+        fComp = document.getElementById("fComplicacion"), fNota = document.getElementById("fNota"),
+        notaWrap = document.getElementById("notaWrap");
+    if(rec){
+      fFecha.value = rec.fecha; fHora.value = rec.hora; fTipo.value = rec.tipo;
+      fNumCaso.value = rec.numeroCaso || ""; fComp.checked = !!rec.complicacion; fNota.value = rec.nota || "";
+      notaWrap.hidden = !rec.complicacion;
+    } else {
+      document.getElementById("procForm").reset();
+      fFecha.value = todayStr(); fHora.value = nowStr(); notaWrap.hidden = true;
+    }
+    var panel = document.getElementById("formPanel");
+    panel.hidden = false;
+    panel.scrollIntoView({ behavior:"smooth", block:"start" });
+  }
+  function closeForm(){
+    document.getElementById("formPanel").hidden = true;
+    editingId = null;
+    document.getElementById("procForm").reset();
+  }
+
+  function computeStats(){
+    var total = records.length;
+    var ym = new Date(); var ymStr = ym.getFullYear() + "-" + pad(ym.getMonth()+1);
+    var month = records.filter(function(r){ return r.fecha && r.fecha.indexOf(ymStr) === 0; }).length;
+    var compCount = records.filter(function(r){ return r.complicacion; }).length;
+    var pct = total ? Math.round((compCount/total)*100) : 0;
+    document.getElementById("statTotal").textContent = total;
+    document.getElementById("statMonth").textContent = month;
+    document.getElementById("statComp").textContent = total ? (compCount + " (" + pct + "%)") : "0";
+  }
+
+  function applyFilters(list){
+    return list.filter(function(r){
+      if(filter.mode === "comp" && !r.complicacion) return false;
+      if(filter.tipo && r.tipo !== filter.tipo) return false;
+      return true;
+    });
+  }
+
+  function renderCard(r){
+    var badge = r.complicacion ? '<span class="badge badge-danger">Complicación</span>' : "";
+    var caseTag = r.numeroCaso ? '<span class="tag-case">' + escapeHtml(r.numeroCaso) + "</span>" : "";
+    var nota = (r.complicacion && r.nota) ? '<p class="entry-note">' + escapeHtml(r.nota) + "</p>" : "";
+    return (
+      '<article class="entry" data-id="' + r.id + '">' +
+        '<div class="entry-time mono">' + escapeHtml(r.hora) + "</div>" +
+        '<div class="entry-body"><div class="entry-title">' + escapeHtml(r.tipo) + "</div>" + badge + caseTag + nota + "</div>" +
+        '<div class="entry-actions">' +
+          '<button class="icon-btn" type="button" data-action="edit" data-id="' + r.id + '">Editar</button>' +
+          '<button class="icon-btn" type="button" data-action="delete" data-id="' + r.id + '">Eliminar</button>' +
+        "</div>" +
+      "</article>"
+    );
+  }
+
+  function render(){
+    computeStats();
+    var logEl = document.getElementById("log");
+    var emptyEl = document.getElementById("emptyState");
+    if(records.length === 0){ logEl.innerHTML = ""; emptyEl.hidden = false; return; }
+    emptyEl.hidden = true;
+    var list = applyFilters(records);
+    if(list.length === 0){ logEl.innerHTML = '<p class="no-match">Ningún registro coincide con este filtro.</p>'; return; }
+    var html = ""; var lastDate = null;
+    for(var i=0;i<list.length;i++){
+      var r = list[i];
+      if(r.fecha !== lastDate){ html += '<h3 class="date-heading">' + formatFechaLarga(r.fecha) + "</h3>"; lastDate = r.fecha; }
+      html += renderCard(r);
+    }
+    logEl.innerHTML = html;
+  }
+
+  function persistLocal(){ try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(records)); }catch(e){} }
+  function loadLocal(){ try{ return JSON.parse(localStorage.getItem(LOCAL_KEY) || "[]"); }catch(e){ return []; } }
+  function sortDesc(list){ return list.slice().sort(function(a,b){ return (b.fechaHora||"").localeCompare(a.fechaHora||""); }); }
+
+  function saveRecord(rec){
+    if(editingId){
+      var idx = records.findIndex(function(r){ return r.id === editingId; });
+      if(idx > -1) records[idx] = Object.assign({}, rec, { id: editingId });
+    } else {
+      rec.id = "local_" + Date.now() + "_" + Math.random().toString(36).slice(2,8);
+      records.push(rec);
+    }
+    records = sortDesc(records);
+    persistLocal();
+    render();
+  }
+  function deleteRecord(id){
+    records = records.filter(function(r){ return r.id !== id; });
+    persistLocal();
+    render();
+  }
+
+  function init(){
+    populateSelects();
+    wireStaticUI();
+    records = sortDesc(loadLocal());
+    render();
+    registerServiceWorker();
+  }
+
+  function wireStaticUI(){
+    document.getElementById("btnNew").addEventListener("click", function(){ openForm(null); });
+    document.getElementById("btnEmptyNew").addEventListener("click", function(){ openForm(null); });
+    document.getElementById("btnCancel").addEventListener("click", closeForm);
+
+    document.getElementById("fComplicacion").addEventListener("change", function(e){
+      document.getElementById("notaWrap").hidden = !e.target.checked;
+    });
+
+    document.getElementById("procForm").addEventListener("submit", function(e){
+      e.preventDefault();
+      var fecha = document.getElementById("fFecha").value;
+      var hora = document.getElementById("fHora").value;
+      var tipo = document.getElementById("fTipo").value;
+      if(!fecha || !hora || !tipo) return;
+      var complicacion = document.getElementById("fComplicacion").checked;
+      var nota = complicacion ? document.getElementById("fNota").value.trim() : "";
+      var numeroCaso = document.getElementById("fNumCaso").value.trim();
+      var rec = {
+        fecha: fecha, hora: hora, tipo: tipo, complicacion: complicacion, nota: nota,
+        numeroCaso: numeroCaso, fechaHora: fecha + "T" + hora, updatedAt: new Date().toISOString()
+      };
+      try{
+        saveRecord(rec);
+        closeForm();
+        showToast("Registro guardado.");
+      }catch(err){
+        console.error(err);
+        showToast("No se pudo guardar. Inténtalo de nuevo.");
+      }
+    });
+
+    var chips = document.querySelectorAll(".chip");
+    chips.forEach(function(ch){
+      ch.addEventListener("click", function(){
+        chips.forEach(function(c){ c.classList.remove("is-active"); });
+        ch.classList.add("is-active");
+        filter.mode = ch.getAttribute("data-filter");
+        render();
+      });
+    });
+    document.getElementById("filterTipo").addEventListener("change", function(e){ filter.tipo = e.target.value; render(); });
+
+    document.getElementById("log").addEventListener("click", function(e){
+      var btn = e.target.closest("[data-action]");
+      if(!btn) return;
+      var id = btn.getAttribute("data-id");
+      var action = btn.getAttribute("data-action");
+      var rec = records.find(function(r){ return r.id === id; });
+      if(action === "edit"){
+        if(rec) openForm(rec);
+      } else if(action === "delete"){
+        if(btn.getAttribute("data-confirm") === "1"){
+          deleteRecord(id);
+        } else {
+          btn.setAttribute("data-confirm", "1");
+          btn.textContent = "¿Confirmar?";
+          btn.classList.add("confirm");
+          clearTimeout(btn._revertTimer);
+          btn._revertTimer = setTimeout(function(){
+            btn.setAttribute("data-confirm", "");
+            btn.textContent = "Eliminar";
+            btn.classList.remove("confirm");
+          }, 4000);
+        }
+      }
+    });
+
+    document.getElementById("btnExport").addEventListener("click", exportCsv);
+    document.getElementById("btnSummary").addEventListener("click", openSummary);
+    document.getElementById("btnSummaryClose").addEventListener("click", closeSummary);
+    document.getElementById("summaryYear").addEventListener("change", function(e){ renderSummary(Number(e.target.value)); });
+    document.getElementById("btnSummaryExport").addEventListener("click", function(){
+      exportSummaryCsv(Number(document.getElementById("summaryYear").value));
+    });
+
+    document.getElementById("btnPremium").addEventListener("click", openPremiumModal);
+
+    var topbar = document.getElementById("topbar");
+    window.addEventListener("scroll", function(){ topbar.classList.toggle("is-stuck", window.scrollY > 4); });
+
+    // PWA install prompt (Android/desktop Chrome)
+    window.addEventListener("beforeinstallprompt", function(e){
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      if(!localStorage.getItem("installBannerDismissed")){
+        document.getElementById("installBanner").hidden = false;
+      }
+    });
+    document.getElementById("btnInstall").addEventListener("click", function(){
+      document.getElementById("installBanner").hidden = true;
+      if(deferredInstallPrompt){ deferredInstallPrompt.prompt(); deferredInstallPrompt = null; }
+    });
+    document.getElementById("btnDismissInstall").addEventListener("click", function(){
+      document.getElementById("installBanner").hidden = true;
+      try{ localStorage.setItem("installBannerDismissed", "1"); }catch(e){}
+    });
+  }
+
+  function registerServiceWorker(){
+    if("serviceWorker" in navigator){
+      navigator.serviceWorker.register("sw.js").catch(function(err){ console.warn("SW registration failed", err); });
+    }
+  }
+
+  // ---------- Premium (placeholder: no backend wired yet) ----------
+  function openPremiumModal(){
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.innerHTML =
+      '<div class="modal">' +
+        "<h3>Bitácora Premium</h3>" +
+        "<p>La versión gratuita guarda tus registros solo en este dispositivo. Premium añadirá:</p>" +
+        "<ul>" +
+          "<li>Sincronización entre tus dispositivos</li>" +
+          "<li>Copia de seguridad en la nube</li>" +
+          "<li>Informes anuales exportables en PDF</li>" +
+        "</ul>" +
+        '<p style="margin-bottom:16px;">Todavía no está activo el pago. Si te interesa, escríbeme y te aviso en cuanto esté disponible.</p>' +
+        '<div class="modal-actions"><button class="btn btn-ghost" id="btnClosePremium" type="button">Cerrar</button></div>' +
+      "</div>";
+    document.body.appendChild(backdrop);
+    function close(){ backdrop.remove(); }
+    backdrop.addEventListener("click", function(e){ if(e.target === backdrop) close(); });
+    backdrop.querySelector("#btnClosePremium").addEventListener("click", close);
+  }
+
+  // ---------- annual summary ----------
+  function yearsWithData(){
+    var years = {};
+    records.forEach(function(r){ if(r.fecha) years[r.fecha.slice(0,4)] = true; });
+    var list = Object.keys(years).map(Number);
+    var currentYear = new Date().getFullYear();
+    if(list.indexOf(currentYear) === -1) list.push(currentYear);
+    list.sort(function(a,b){ return b-a; });
+    return list;
+  }
+  function openSummary(){
+    var sel = document.getElementById("summaryYear");
+    var years = yearsWithData();
+    sel.innerHTML = years.map(function(y){ return '<option value="' + y + '">' + y + "</option>"; }).join("");
+    var panel = document.getElementById("summaryPanel");
+    panel.hidden = false;
+    renderSummary(years[0]);
+    panel.scrollIntoView({ behavior:"smooth", block:"start" });
+  }
+  function closeSummary(){ document.getElementById("summaryPanel").hidden = true; }
+
+  function computeAnnualSummary(year){
+    var yearRecords = records.filter(function(r){ return r.fecha && Number(r.fecha.slice(0,4)) === year; });
+    var total = yearRecords.length;
+    var compCount = yearRecords.filter(function(r){ return r.complicacion; }).length;
+    var byTipo = {};
+    PROCEDIMIENTOS.forEach(function(p){ byTipo[p] = { n:0, comp:0 }; });
+    yearRecords.forEach(function(r){
+      if(!byTipo[r.tipo]) byTipo[r.tipo] = { n:0, comp:0 };
+      byTipo[r.tipo].n++;
+      if(r.complicacion) byTipo[r.tipo].comp++;
+    });
+    var meses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+    var byMes = meses.map(function(){ return 0; });
+    yearRecords.forEach(function(r){ var m = Number(r.fecha.slice(5,7))-1; if(m>=0 && m<12) byMes[m]++; });
+    return { year:year, total:total, compCount:compCount, byTipo:byTipo, byMes:byMes, mesesNombres:meses };
+  }
+
+  function renderSummary(year){
+    var s = computeAnnualSummary(year);
+    var el = document.getElementById("summaryContent");
+    var pct = s.total ? Math.round((s.compCount/s.total)*100) : 0;
+    if(s.total === 0){ el.innerHTML = '<p class="summary-empty">No hay procedimientos registrados en ' + year + ".</p>"; return; }
+    var tipoRows = Object.keys(s.byTipo).filter(function(t){ return s.byTipo[t].n > 0; })
+      .sort(function(a,b){ return s.byTipo[b].n - s.byTipo[a].n; })
+      .map(function(t){ var d = s.byTipo[t]; return "<tr><td>" + escapeHtml(t) + '</td><td class="num">' + d.n + '</td><td class="num">' + d.comp + "</td></tr>"; }).join("");
+    var mesRows = s.mesesNombres.map(function(m,i){ return s.byMes[i] > 0 ? "<tr><td>" + m + '</td><td class="num">' + s.byMes[i] + "</td></tr>" : ""; }).join("");
+    el.innerHTML =
+      '<div class="summary-block summary-top">' +
+        '<div class="stat-tile"><span class="stat-value mono">' + s.total + '</span><span class="stat-label">Total ' + year + '</span></div>' +
+        '<div class="stat-tile"><span class="stat-value mono">' + s.compCount + " (" + pct + '%)</span><span class="stat-label">Complicaciones</span></div>' +
+      "</div>" +
+      '<div class="summary-block"><h4>Por tipo de procedimiento</h4>' +
+        '<table class="summary-table"><thead><tr><th>Procedimiento</th><th class="num">N</th><th class="num">Complic.</th></tr></thead><tbody>' + tipoRows + "</tbody></table></div>" +
+      '<div class="summary-block"><h4>Por mes</h4>' +
+        '<table class="summary-table"><thead><tr><th>Mes</th><th class="num">N</th></tr></thead><tbody>' + mesRows + "</tbody></table></div>";
+  }
+
+  function downloadFile(filename, text){
+    var blob = new Blob([text], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+  }
+
+  function exportSummaryCsv(year){
+    var s = computeAnnualSummary(year);
+    if(s.total === 0){ showToast("No hay registros ese año para exportar."); return; }
+    var lines = [];
+    lines.push(["Resumen anual", String(year)]);
+    lines.push(["Total procedimientos", String(s.total)]);
+    lines.push(["Complicaciones", String(s.compCount)]);
+    lines.push(["Tasa de complicaciones (%)", String(s.total ? Math.round((s.compCount/s.total)*100) : 0)]);
+    lines.push([]);
+    lines.push(["Procedimiento","N","Complicaciones"]);
+    Object.keys(s.byTipo).filter(function(t){ return s.byTipo[t].n > 0; })
+      .sort(function(a,b){ return s.byTipo[b].n - s.byTipo[a].n; })
+      .forEach(function(t){ lines.push([t, String(s.byTipo[t].n), String(s.byTipo[t].comp)]); });
+    lines.push([]);
+    lines.push(["Mes","N"]);
+    s.mesesNombres.forEach(function(m,i){ if(s.byMes[i] > 0) lines.push([m, String(s.byMes[i])]); });
+    function esc(v){ return '"' + String(v==null?"":v).replace(/"/g,'""') + '"'; }
+    var csv = lines.map(function(row){ return row.map(esc).join(","); }).join("\r\n");
+    downloadFile("resumen_" + year + ".csv", csv);
+    showToast("Resumen exportado.");
+  }
+
+  function buildCsv(){
+    var header = ["Fecha","Hora","Procedimiento","Identificador","Complicacion","Detalle"];
+    var rows = sortDesc(records).slice().reverse().map(function(r){
+      return [r.fecha, r.hora, r.tipo, r.numeroCaso || "", r.complicacion ? "Si" : "No", (r.nota||"").replace(/\r?\n/g," ")];
+    });
+    function esc(v){ return '"' + String(v==null?"":v).replace(/"/g,'""') + '"'; }
+    return [header].concat(rows).map(function(row){ return row.map(esc).join(","); }).join("\r\n");
+  }
+
+  function exportCsv(){
+    if(records.length === 0){ showToast("No hay registros que exportar."); return; }
+    downloadFile("procedimientos_" + todayStr() + ".csv", buildCsv());
+    showToast("Archivo exportado.");
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
