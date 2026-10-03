@@ -50,3 +50,7 @@ Esta herramienta no es un dispositivo médico, no sustituye la historia clínica
 
 - [ ] Capa de cuentas y suscripción freemium (sincronización en la nube, backup, informes PDF).
 - [ ] Integración de pago (Stripe).
+
+---
+
+_Despliegue automático verificado: 2026-10-03 22:32 UTC_
