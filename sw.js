@@ -1,6 +1,6 @@
 // Service worker mínimo: cachea el shell de la app para que cargue offline
 // y sea instalable. Los datos del usuario viven en localStorage, no aquí.
-var CACHE_NAME = "bitacora-procedimientos-v3";
+var CACHE_NAME = "bitacora-procedimientos-v4";
 var ASSETS = [
   "/",
   "/index.html",
