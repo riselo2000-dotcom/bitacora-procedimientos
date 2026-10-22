@@ -237,7 +237,7 @@
       <button class="premium-pill" id="btnPremium" type="button">Premium</button>
     </div>
     <div class="install-banner" id="installBanner" hidden>
-      <span>Instala la app en tu pantalla de inicio para un acceso directo.</span>
+      <span id="installText">Instala la app en tu pantalla de inicio para un acceso directo.</span>
       <div style="display:flex; align-items:center; gap:6px; flex:none;">
         <button id="btnInstall" type="button">Instalar</button>
         <button class="dismiss" id="btnDismissInstall" type="button" aria-label="Cerrar">×</button>
@@ -571,13 +571,27 @@
     window.addEventListener("scroll", function(){ topbar.classList.toggle("is-stuck", window.scrollY > 4); });
 
     // PWA install prompt (Android/desktop Chrome)
+    var isStandalone = (window.navigator.standalone === true) ||
+      (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
+    var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    var bannerDismissed = false;
+    try{ bannerDismissed = !!localStorage.getItem("installBannerDismissed"); }catch(e){}
+
     window.addEventListener("beforeinstallprompt", function(e){
       e.preventDefault();
       deferredInstallPrompt = e;
-      if(!localStorage.getItem("installBannerDismissed")){
+      if(!isStandalone && !bannerDismissed){
         document.getElementById("installBanner").hidden = false;
       }
     });
+    // iOS no admite instalación automática: mostrar instrucciones manuales
+    if(isIOS && !isStandalone && !bannerDismissed){
+      document.getElementById("installText").textContent =
+        "Para instalar en iPhone: toca Compartir y luego «Añadir a pantalla de inicio».";
+      document.getElementById("btnInstall").hidden = true;
+      document.getElementById("installBanner").hidden = false;
+    }
     document.getElementById("btnInstall").addEventListener("click", function(){
       document.getElementById("installBanner").hidden = true;
       if(deferredInstallPrompt){ deferredInstallPrompt.prompt(); deferredInstallPrompt = null; }
