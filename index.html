@@ -310,6 +310,8 @@
 
     <div class="footer-actions">
       <button class="btn btn-ghost" id="btnExport" type="button">Exportar CSV</button>
+      <button class="btn btn-ghost" id="btnImport" type="button">Importar CSV</button>
+      <input type="file" id="fileImport" accept=".csv,text/csv" hidden>
       <span class="footer-note">Guardado solo en este dispositivo.</span>
     </div>
     <div class="footer-links">
@@ -546,6 +548,16 @@
     });
 
     document.getElementById("btnExport").addEventListener("click", exportCsv);
+    var fileInput = document.getElementById("fileImport");
+    document.getElementById("btnImport").addEventListener("click", function(){ fileInput.click(); });
+    fileInput.addEventListener("change", function(){
+      var f = fileInput.files && fileInput.files[0];
+      if(!f) return;
+      var reader = new FileReader();
+      reader.onload = function(){ importCsv(String(reader.result || "")); fileInput.value = ""; };
+      reader.onerror = function(){ showToast("No se pudo leer el archivo."); fileInput.value = ""; };
+      reader.readAsText(f, "utf-8");
+    });
     document.getElementById("btnSummary").addEventListener("click", openSummary);
     document.getElementById("btnSummaryClose").addEventListener("click", closeSummary);
     document.getElementById("summaryYear").addEventListener("change", function(e){ renderSummary(Number(e.target.value)); });
@@ -706,6 +718,63 @@
     if(records.length === 0){ showToast("No hay registros que exportar."); return; }
     downloadFile("procedimientos_" + todayStr() + ".csv", buildCsv());
     showToast("Archivo exportado.");
+  }
+
+  function parseCsv(text){
+    if(text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+    var rows = [], row = [], field = "", inQ = false;
+    for(var i=0;i<text.length;i++){
+      var c = text[i];
+      if(inQ){
+        if(c === '"'){ if(text[i+1] === '"'){ field += '"'; i++; } else { inQ = false; } }
+        else field += c;
+      } else if(c === '"'){ inQ = true; }
+      else if(c === ","){ row.push(field); field = ""; }
+      else if(c === "\n" || c === "\r"){
+        if(c === "\r" && text[i+1] === "\n") i++;
+        row.push(field); field = "";
+        if(row.length > 1 || row[0] !== "") rows.push(row);
+        row = [];
+      } else field += c;
+    }
+    row.push(field);
+    if(row.length > 1 || row[0] !== "") rows.push(row);
+    return rows;
+  }
+
+  function importCsv(text){
+    var rows = parseCsv(text);
+    if(rows.length < 2 || rows[0][0].trim() !== "Fecha" || rows[0][2].trim() !== "Procedimiento"){
+      showToast("Archivo no válido: usa un CSV exportado desde esta app.");
+      return;
+    }
+    function key(r){ return [r.fecha, r.hora, r.tipo, r.numeroCaso || ""].join("|"); }
+    var seen = {};
+    records.forEach(function(r){ seen[key(r)] = true; });
+    var added = 0, dup = 0, invalid = 0;
+    for(var i=1;i<rows.length;i++){
+      var c = rows[i];
+      var fecha = (c[0]||"").trim(), hora = (c[1]||"").trim(), tipo = (c[2]||"").trim();
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(fecha) || !/^\d{2}:\d{2}$/.test(hora) || PROCEDIMIENTOS.indexOf(tipo) === -1){ invalid++; continue; }
+      var rec = {
+        fecha: fecha, hora: hora, tipo: tipo,
+        numeroCaso: (c[3]||"").trim().slice(0,40),
+        complicacion: /^s[ií]$/i.test((c[4]||"").trim()),
+        nota: (c[5]||"").trim(),
+        fechaHora: fecha + "T" + hora,
+        updatedAt: new Date().toISOString()
+      };
+      if(seen[key(rec)]){ dup++; continue; }
+      seen[key(rec)] = true;
+      rec.id = "local_" + Date.now() + "_" + Math.random().toString(36).slice(2,8) + "_" + i;
+      records.push(rec);
+      added++;
+    }
+    if(added > 0){ records = sortDesc(records); persistLocal(); render(); }
+    var msg = added + " importados";
+    if(dup) msg += ", " + dup + " duplicados omitidos";
+    if(invalid) msg += ", " + invalid + " no válidos";
+    showToast(msg + ".");
   }
 
   init();

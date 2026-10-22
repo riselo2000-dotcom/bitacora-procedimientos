@@ -10,7 +10,7 @@ PWA gratuita para que profesionales sanitarios registren su propia actividad de 
 - Marcado de complicaciones con detalle opcional.
 - Estadísticas rápidas (total, del mes, complicaciones).
 - Resumen anual (por tipo de procedimiento y por mes) para recertificación.
-- Exportación a CSV (registro completo y resumen anual).
+- Exportación e importación de CSV (registro completo; resumen anual solo exportación). Al importar se omiten duplicados y filas no válidas.
 - Instalable como PWA (Android/desktop vía `beforeinstallprompt`, iOS vía "Añadir a pantalla de inicio").
 - Funciona offline (service worker con cache del shell de la app).
 - **Privacidad por diseño**: todos los datos se guardan únicamente en `localStorage`, en el dispositivo del usuario. No hay backend, no hay servidor, no se recogen datos de pacientes.
