@@ -6,7 +6,7 @@ PWA gratuita para que profesionales sanitarios registren su propia actividad de 
 
 ## Características
 
-- Registro de procedimientos con fecha, hora, tipo (lista predefinida de 16 procedimientos médico-quirúrgicos) e identificador interno opcional.
+- Registro de procedimientos con fecha, hora, tipo (lista predefinida de 20 procedimientos médico-quirúrgicos) e identificador interno opcional.
 - Marcado de complicaciones con detalle opcional.
 - Estadísticas rápidas (total, del mes, complicaciones).
 - Resumen anual (por tipo de procedimiento y por mes) para recertificación.
